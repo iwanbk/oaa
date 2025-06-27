@@ -146,6 +146,34 @@ describe('TicketsController', () => {
           ),
         );
       });
+
+      it('registrationAddressChange ticket duplication', async () => {
+        const company = await Company.create({ name: 'test1' });
+        await User.create({
+          name: 'Test User',
+          role: UserRole.corporateSecretary,
+          companyId: company.id,
+        });
+
+        // Create first ticket
+        await controller.create({
+          companyId: company.id,
+          type: TicketType.registrationAddressChange,
+        });
+
+        // Try to create a duplicate ticket - should throw error
+        await expect(
+          controller.create({
+            companyId: company.id,
+            type: TicketType.registrationAddressChange,
+          }),
+        ).rejects.toEqual(
+          new ConflictException(
+            `Company already has a registrationAddressChange ticket`,
+          ),
+        );
+      });
+
     });
   });
 });
