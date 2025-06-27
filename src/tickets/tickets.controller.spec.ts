@@ -2,6 +2,7 @@ import { ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Company } from '../../db/models/Company';
 import {
+  Ticket,
   TicketCategory,
   TicketStatus,
   TicketType,
@@ -143,6 +144,94 @@ describe('TicketsController', () => {
         ).rejects.toEqual(
           new ConflictException(
             `Cannot find user with role corporateSecretary to create a ticket`,
+          ),
+        );
+      });
+    });
+
+    describe('strikeOff', () => {
+      it('creates strikeOff ticket and resolves other active tickets', async () => {
+        const company = await Company.create({ name: 'test-strike-off' });
+        const director = await User.create({
+          name: 'Test Director',
+          role: UserRole.director,
+          companyId: company.id,
+        });
+
+        // Create some active tickets first
+        const ticket1 = await Ticket.create({
+          companyId: company.id,
+          assigneeId: director.id,
+          category: TicketCategory.accounting,
+          type: TicketType.managementReport,
+          status: TicketStatus.open,
+        });
+
+        const ticket2 = await Ticket.create({
+          companyId: company.id,
+          assigneeId: director.id,
+          category: TicketCategory.corporate,
+          type: TicketType.registrationAddressChange,
+          status: TicketStatus.open,
+        });
+
+        // Create the strikeOff ticket
+        const strikeOffTicket = await controller.create({
+          companyId: company.id,
+          type: TicketType.strikeOff,
+        });
+
+        // Verify the strikeOff ticket was created correctly
+        expect(strikeOffTicket.category).toBe(TicketCategory.management);
+        expect(strikeOffTicket.assigneeId).toBe(director.id);
+        expect(strikeOffTicket.status).toBe(TicketStatus.open);
+
+        // Verify that the other tickets were resolved
+        const updatedTicket1 = await Ticket.findByPk(ticket1.id);
+        const updatedTicket2 = await Ticket.findByPk(ticket2.id);
+
+        expect(updatedTicket1).not.toBeNull();
+        expect(updatedTicket2).not.toBeNull();
+        expect(updatedTicket1?.status).toBe(TicketStatus.resolved);
+        expect(updatedTicket2?.status).toBe(TicketStatus.resolved);
+      });
+
+      it('throws error if there are multiple directors', async () => {
+        const company = await Company.create({ name: 'test-multiple-directors' });
+        await User.create({
+          name: 'Director 1',
+          role: UserRole.director,
+          companyId: company.id,
+        });
+        await User.create({
+          name: 'Director 2',
+          role: UserRole.director,
+          companyId: company.id,
+        });
+
+        await expect(
+          controller.create({
+            companyId: company.id,
+            type: TicketType.strikeOff,
+          }),
+        ).rejects.toEqual(
+          new ConflictException(
+            `Multiple users with role director. Cannot create a strikeOff ticket`,
+          ),
+        );
+      });
+
+      it('throws error if there is no director', async () => {
+        const company = await Company.create({ name: 'test-no-director' });
+
+        await expect(
+          controller.create({
+            companyId: company.id,
+            type: TicketType.strikeOff,
+          }),
+        ).rejects.toEqual(
+          new ConflictException(
+            `Cannot find user with role director to create a strikeOff ticket`,
           ),
         );
       });

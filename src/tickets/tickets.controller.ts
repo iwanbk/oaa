@@ -7,6 +7,8 @@ import {
   TicketType,
 } from '../../db/models/Ticket';
 import { User, UserRole } from '../../db/models/User';
+import { Sequelize } from 'sequelize-typescript';
+import { Op } from 'sequelize';
 
 interface newTicketDto {
   type: TicketType;
@@ -32,6 +34,12 @@ export class TicketsController {
   @Post()
   async create(@Body() newTicketDto: newTicketDto) {
     const { type, companyId } = newTicketDto;
+
+    // Handle strikeOff ticket type in separate function
+    // as the logic is quite different than the others
+    if (type === TicketType.strikeOff) {
+      return await this.createStrikeOffTicket(companyId);
+    }
 
     const category =
       type === TicketType.managementReport
@@ -68,7 +76,79 @@ export class TicketsController {
       status: TicketStatus.open,
     });
 
-    const ticketDto: TicketDto = {
+    return this.createTicketDto(ticket);
+  }
+
+  /**
+   * Creates a strikeOff ticket and resolves all other active tickets for the company
+   */
+  private async createStrikeOffTicket(companyId: number): Promise<TicketDto> {
+    // Find director for the company
+    const directors = await User.findAll({
+      where: { companyId, role: UserRole.director },
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (!directors.length) {
+      throw new ConflictException(
+        `Cannot find user with role ${UserRole.director} to create a strikeOff ticket`,
+      );
+    }
+
+    if (directors.length > 1) {
+      throw new ConflictException(
+        `Multiple users with role ${UserRole.director}. Cannot create a strikeOff ticket`,
+      );
+    }
+
+    const director = directors[0];
+
+    // Use transaction to ensure data consistency
+    const sequelize = Ticket.sequelize;
+    if (!sequelize) {
+      throw new Error('Sequelize instance not available');
+    }
+    const transaction = await sequelize.transaction();
+
+    try {
+      // Create the strikeOff ticket
+      const ticket = await Ticket.create({
+        companyId,
+        assigneeId: director.id,
+        category: TicketCategory.management,
+        type: TicketType.strikeOff,
+        status: TicketStatus.open,
+      }, { transaction });
+
+      // Resolve all other active tickets for this company
+      await Ticket.update(
+        { status: TicketStatus.resolved },
+        {
+          where: {
+            companyId,
+            status: TicketStatus.open,
+            id: { [Op.ne]: ticket.id } // Exclude the newly created ticket
+          },
+          transaction
+        }
+      );
+
+      // Commit the transaction
+      await transaction.commit();
+
+      return this.createTicketDto(ticket);
+    } catch (error) {
+      // Rollback the transaction in case of errorAdd commentMore actions
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
+   * Creates a DTO from a ticket entity
+   */
+  private createTicketDto(ticket: Ticket): TicketDto {
+    return {
       id: ticket.id,
       type: ticket.type,
       assigneeId: ticket.assigneeId,
@@ -76,7 +156,5 @@ export class TicketsController {
       category: ticket.category,
       companyId: ticket.companyId,
     };
-
-    return ticketDto;
   }
 }
