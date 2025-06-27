@@ -17,9 +17,12 @@ export class ReportsController {
   @Post()
   @HttpCode(201)
   generate() {
-    this.reportsService.accounts();
-    this.reportsService.yearly();
-    this.reportsService.fs();
-    return { message: 'finished' };
+    // Use the optimized method that processes all reports in a single file read operation
+    this.reportsService.generateAllReports();
+    return {
+      accounts: this.reportsService.state('accounts'),
+      yearly: this.reportsService.state('yearly'),
+      fs: this.reportsService.state('fs'),
+    };
   }
 }
