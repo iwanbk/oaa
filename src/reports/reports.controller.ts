@@ -11,18 +11,22 @@ export class ReportsController {
       'accounts.csv': this.reportsService.state('accounts'),
       'yearly.csv': this.reportsService.state('yearly'),
       'fs.csv': this.reportsService.state('fs'),
+      generate: this.reportsService.state('generate'),
     };
   }
 
   @Post()
   @HttpCode(201)
   generate() {
-    // Use the optimized method that processes all reports in a single file read operation
-    this.reportsService.generateAllReports();
+    // Start the report generation in the background without waiting for it to complete
+    void this.reportsService.generateAllReports();
+
+    // Return immediately with the current state (which should be 'starting')
     return {
       accounts: this.reportsService.state('accounts'),
       yearly: this.reportsService.state('yearly'),
       fs: this.reportsService.state('fs'),
+      generate: this.reportsService.state('generate'),
     };
   }
 }
