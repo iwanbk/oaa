@@ -18,10 +18,10 @@ export class ReportsController {
   @Post()
   @HttpCode(201)
   generate() {
-    // Start the report generation in the background without waiting for it to complete
+    // Reset states and start the report generation in the background without waiting for it to complete
     void this.reportsService.generateAllReports();
 
-    // Return immediately with the current state (which should be 'starting')
+    // Return immediately with the current state (which should be 'not started' or 'starting')
     return {
       accounts: this.reportsService.state('accounts'),
       yearly: this.reportsService.state('yearly'),

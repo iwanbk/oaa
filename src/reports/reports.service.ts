@@ -22,8 +22,12 @@ export class ReportsService {
    * @returns Promise that resolves when all reports are generated
    */
   generateAllReports(): Promise<void> {
-    // Set overall generation state to starting
+    // Reset all states at the beginning of each call
+    this.states.accounts = 'not started';
+    this.states.yearly = 'not started';
+    this.states.fs = 'not started';
     this.states.generate = 'starting';
+
     const overallStart = performance.now();
 
     // Return a promise that resolves when all processing is complete
@@ -132,7 +136,10 @@ export class ReportsService {
             accountsOutput.push(`${account},${balance.toFixed(2)}`);
           }
           fs.writeFileSync('out/accounts.csv', accountsOutput.join('\n'));
-          this.states.accounts = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+          this.states.accounts = `finished in ${(
+            (performance.now() - start) /
+            1000
+          ).toFixed(2)}`;
 
           // Generate yearly report output
           const yearlyOutput = ['Financial Year,Cash Balance'];
@@ -142,7 +149,10 @@ export class ReportsService {
               yearlyOutput.push(`${year},${cashByYear[year].toFixed(2)}`);
             });
           fs.writeFileSync('out/yearly.csv', yearlyOutput.join('\n'));
-          this.states.yearly = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+          this.states.yearly = `finished in ${(
+            (performance.now() - start) /
+            1000
+          ).toFixed(2)}`;
 
           // Generate financial statement report output
           const fsOutput: string[] = [];
@@ -192,19 +202,29 @@ export class ReportsService {
             totalEquity += value;
           }
           fsOutput.push(
-            `Retained Earnings (Net Income),${(totalRevenue - totalExpenses).toFixed(2)}`,
+            `Retained Earnings (Net Income),${(totalRevenue - totalExpenses).toFixed(
+              2,
+            )}`,
           );
           totalEquity += totalRevenue - totalExpenses;
           fsOutput.push(`Total Equity,${totalEquity.toFixed(2)}`);
           fsOutput.push('');
           fsOutput.push(
-            `Assets = Liabilities + Equity, ${totalAssets.toFixed(2)} = ${(totalLiabilities + totalEquity).toFixed(2)}`,
+            `Assets = Liabilities + Equity, ${totalAssets.toFixed(
+              2,
+            )} = ${(totalLiabilities + totalEquity).toFixed(2)}`,
           );
           fs.writeFileSync('out/fs.csv', fsOutput.join('\n'));
-          this.states.fs = `finished in ${((performance.now() - start) / 1000).toFixed(2)}`;
+          this.states.fs = `finished in ${(
+            (performance.now() - start) /
+            1000
+          ).toFixed(2)}`;
 
           // Update overall generation state
-          this.states.generate = `finished in ${((performance.now() - overallStart) / 1000).toFixed(2)}`;
+          this.states.generate = `finished in ${(
+            (performance.now() - overallStart) /
+            1000
+          ).toFixed(2)}`;
         } catch (error) {
           // Handle any errors
           const errorMessage =
@@ -221,39 +241,4 @@ export class ReportsService {
     });
   }
 
-  /**
-   * Generate accounts report
-   * For better performance, use generateAllReports() instead
-   * @returns Promise that resolves with the state string
-   */
-  async accounts(): Promise<string> {
-    // Use the optimized implementation
-    await this.generateAllReports();
-    // Return the state which contains the execution time
-    return this.states.accounts;
-  }
-
-  /**
-   * Generate yearly report
-   * For better performance, use generateAllReports() instead
-   * @returns Promise that resolves with the state string
-   */
-  async yearly(): Promise<string> {
-    // Use the optimized implementation
-    await this.generateAllReports();
-    // Return the state which contains the execution time
-    return this.states.yearly;
-  }
-
-  /**
-   * Generate financial statement report
-   * For better performance, use generateAllReports() instead
-   * @returns Promise that resolves with the state string
-   */
-  async fs(): Promise<string> {
-    // Use the optimized implementation
-    await this.generateAllReports();
-    // Return the state which contains the execution time
-    return this.states.fs;
-  }
 }

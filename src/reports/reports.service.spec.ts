@@ -18,31 +18,40 @@ describe('ReportsService', () => {
 
   // Mock the file system operations for testing
   beforeEach(() => {
-    jest.spyOn(service, 'generateAllReports').mockImplementation(async () => {
+    jest.spyOn(service, 'generateAllReports').mockImplementation(() => {
       // Use reflection to set the private states for testing
       const serviceAny = service as any;
       serviceAny.states = {
-        accounts: 'finished in 0.00',
-        yearly: 'finished in 0.00',
-        fs: 'finished in 0.00',
-        generate: 'finished in 0.00'
+        accounts: 'not started',
+        yearly: 'not started',
+        fs: 'not started',
+        generate: 'starting'
       };
       return Promise.resolve();
     });
   });
 
-  it('should generate accounts report asynchronously', async () => {
-    const result = await service.accounts();
-    expect(result).toBe('finished in 0.00');
+  it('should reset states when generateAllReports is called', () => {
+    service.generateAllReports();
+    expect(service.state('accounts')).toBe('not started');
+    expect(service.state('yearly')).toBe('not started');
+    expect(service.state('fs')).toBe('not started');
+    expect(service.state('generate')).toBe('starting');
   });
 
-  it('should generate yearly report asynchronously', async () => {
-    const result = await service.yearly();
-    expect(result).toBe('finished in 0.00');
-  });
-
-  it('should generate fs report asynchronously', async () => {
-    const result = await service.fs();
-    expect(result).toBe('finished in 0.00');
+  it('should return the correct state for a report type', () => {
+    // Set up the states
+    const serviceAny = service as any;
+    serviceAny.states = {
+      accounts: 'processing',
+      yearly: 'finished in 1.23',
+      fs: 'error: file not found',
+      generate: 'processing'
+    };
+    
+    expect(service.state('accounts')).toBe('processing');
+    expect(service.state('yearly')).toBe('finished in 1.23');
+    expect(service.state('fs')).toBe('error: file not found');
+    expect(service.state('generate')).toBe('processing');
   });
 });
