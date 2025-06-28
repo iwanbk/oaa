@@ -3,16 +3,20 @@ import { ReportsService } from './reports.service';
 
 @Controller('api/v1/reports')
 export class ReportsController {
-  constructor(private reportsService: ReportsService) {}
+  constructor(private reportsService: ReportsService) { }
 
   @Get()
   report() {
-    return {
+    // Ensure we return the current states immediately without waiting for any background processes
+    // This is a non-blocking operation that simply returns the current state strings
+    const currentStates = {
       'accounts.csv': this.reportsService.state('accounts'),
       'yearly.csv': this.reportsService.state('yearly'),
       'fs.csv': this.reportsService.state('fs'),
       generate: this.reportsService.state('generate'),
     };
+
+    return currentStates;
   }
 
   @Post()
