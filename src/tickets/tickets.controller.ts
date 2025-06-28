@@ -60,6 +60,7 @@ export class TicketsController {
         : UserRole.corporateSecretary;
 
     let assignees = await User.findAll({
+      limit: 2,
       where: { companyId, role: userRole },
       order: [['createdAt', 'DESC']],
     });
@@ -68,6 +69,7 @@ export class TicketsController {
     if (type === TicketType.registrationAddressChange && !assignees.length) {
       userRole = UserRole.director;
       assignees = await User.findAll({
+        limit: 2,
         where: { companyId, role: userRole },
         order: [['createdAt', 'DESC']],
       });
