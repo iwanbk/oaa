@@ -37,7 +37,7 @@ export class ReportsService {
             if (idx === -1) break;
             commaIndices.push(idx);
           }
-          
+
           // Extract values directly using substring
           const account = line.substring(commaIndices[0] + 1, commaIndices[1]);
           const debit = line.substring(commaIndices[2] + 1, commaIndices[3]) || '0';
@@ -72,20 +72,20 @@ export class ReportsService {
           .split('\n');
         for (const line of lines) {
           // Optimized line parsing without splitting the entire line
-        const commaIndices: number[] = [];
-        let idx = -1;
-        // Find positions of commas
-        for (let i = 0; i < 5; i++) {
-          idx = line.indexOf(',', idx + 1);
-          if (idx === -1) break;
-          commaIndices.push(idx);
-        }
-        
-        // Extract values directly using substring
-        const date = line.substring(0, commaIndices[0]);
-        const account = line.substring(commaIndices[0] + 1, commaIndices[1]);
-        const debit = line.substring(commaIndices[2] + 1, commaIndices[3]) || '0';
-        const credit = line.substring(commaIndices[3] + 1, commaIndices[4] !== undefined ? commaIndices[4] : line.length) || '0';
+          const commaIndices: number[] = [];
+          let idx = -1;
+          // Find positions of commas
+          for (let i = 0; i < 5; i++) {
+            idx = line.indexOf(',', idx + 1);
+            if (idx === -1) break;
+            commaIndices.push(idx);
+          }
+
+          // Extract values directly using substring
+          const date = line.substring(0, commaIndices[0]);
+          const account = line.substring(commaIndices[0] + 1, commaIndices[1]);
+          const debit = line.substring(commaIndices[2] + 1, commaIndices[3]) || '0';
+          const credit = line.substring(commaIndices[3] + 1, commaIndices[4] !== undefined ? commaIndices[4] : line.length) || '0';
           if (account === 'Cash') {
             const year = new Date(date).getFullYear();
             if (!cashByYear[year]) {
@@ -168,7 +168,7 @@ export class ReportsService {
             if (idx === -1) break;
             commaIndices.push(idx);
           }
-          
+
           // Extract values directly using substring
           const account = line.substring(commaIndices[0] + 1, commaIndices[1]);
           const debit = line.substring(commaIndices[2] + 1, commaIndices[3]) || '0';
