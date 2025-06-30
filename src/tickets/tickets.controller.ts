@@ -33,22 +33,6 @@ export class TicketsController {
   async create(@Body() newTicketDto: newTicketDto) {
     const { type, companyId } = newTicketDto;
 
-    // Check for duplicate registrationAddressChange ticket
-    if (type === TicketType.registrationAddressChange) {
-      const existingTicket = await Ticket.findOne({
-        where: {
-          companyId,
-          type: TicketType.registrationAddressChange,
-        },
-      });
-
-      if (existingTicket) {
-        throw new ConflictException(
-          `Company already has a registrationAddressChange ticket`,
-        );
-      }
-    }
-
     const category =
       type === TicketType.managementReport
         ? TicketCategory.accounting
@@ -88,23 +72,35 @@ export class TicketsController {
 
     const assignee = assignees[0];
 
-    const ticket = await Ticket.create({
-      companyId,
-      assigneeId: assignee.id,
-      category,
-      type,
-      status: TicketStatus.open,
-    });
+    try {
+      const ticket = await Ticket.create({
+        companyId,
+        assigneeId: assignee.id,
+        category,
+        type,
+        status: TicketStatus.open,
+      });
 
-    const ticketDto: TicketDto = {
-      id: ticket.id,
-      type: ticket.type,
-      assigneeId: ticket.assigneeId,
-      status: ticket.status,
-      category: ticket.category,
-      companyId: ticket.companyId,
-    };
+      const ticketDto: TicketDto = {
+        id: ticket.id,
+        type: ticket.type,
+        assigneeId: ticket.assigneeId,
+        status: ticket.status,
+        category: ticket.category,
+        companyId: ticket.companyId,
+      };
 
-    return ticketDto;
+      return ticketDto;
+    } catch (error) {
+      // Handle unique constraint violation for registrationAddressChange
+      if (error.name === 'SequelizeUniqueConstraintError' &&
+        type === TicketType.registrationAddressChange) {
+        throw new ConflictException(
+          `Company already has a registrationAddressChange ticket`
+        );
+      }
+      // Re-throw other errors
+      throw error;
+    }
   }
 }
