@@ -22,11 +22,23 @@ export enum TicketType {
 
 export enum TicketCategory {
   accounting = 'accounting',
-  corporate = 'registrationAddressChange',
+  corporate = 'corporate',
   management = 'management',
 }
 
-@Table({ tableName: 'tickets' })
+@Table({
+  tableName: 'tickets',
+  indexes: [
+    {
+      unique: true,
+      fields: ['companyId', 'type'],
+      where: {
+        type: 'registrationAddressChange'
+      },
+      name: 'idx_unique_registration_address_change'
+    }
+  ]
+})
 export class Ticket extends Model {
   @AutoIncrement
   @PrimaryKey
